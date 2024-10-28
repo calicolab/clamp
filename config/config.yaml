@@ -1,0 +1,21 @@
+# List leaf values are converted to make a parameters grid
+pipeline:
+  model:
+    - "EleutherAI/pythia-160m-deduped"
+    - "gpt2"
+    - "roberta-base"
+  prediction:
+    k: 40
+  embedding:
+    layer: 7
+  clustering:
+    covariance_type: "diag"
+    max_iter: 400
+    n_clusters:
+      - 100 # default = 100
+      - 200
+      - 300
+      - 50
+      - 25
+    progress: 2
+    weight_concentration_prior: 0.05

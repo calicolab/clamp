@@ -1,0 +1,71 @@
+[project]
+name = "clamp"
+version = "0.0.1"
+authors = [
+    { name = "Alvin Tsang", email = "alvintsa@buffalo.edu" },
+    { name = "Cassandra Jacobs", email = "cxjacobs@buffalo.edu" },
+    { name = "Loïc Grobol", email = "lgrobol@parisnanterre.fr" },
+]
+description = "CLuster Any Model Package (CLAMP) for clustering large language model predictions."
+readme = "README.md"
+requires-python = ">= 3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "accelerate",
+    "click",
+    "numpy >= 2.0, < 2.1",
+    "plotnine",
+    "polars",
+    "pyyaml",
+    "rich",
+    "scikit-learn",
+    "torch",
+    "transformers",
+    "umap-learn",
+]
+
+[project.scripts]
+clamp = "clamp.cli:cli"
+
+[project.urls]
+Homepage = "https://github.com/calicolab/clamp"
+Issues = "https://github.com/calicolab/clamp/issues"
+
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+line-length = 100
+lint.select = [
+    "A",
+    "B",
+    "C90",
+    "E",
+    "F",
+    "N",
+    "NPY",
+    "PT",
+    "PTH",
+    "PYI",
+    "S",
+    "W",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+    "S101", # asserts allowed in tests
+    "ARG",  # Unused function args -> fixtures nevertheless are functionally relevant
+]
+
+[tool.setuptools]
+packages = ["clamp"]
+package-dir = {"" = "src"}
+
+[tool.mypy]
+check_untyped_defs = true
+warn_unreachable = true
+plugins = ["numpy.typing.mypy_plugin"]
