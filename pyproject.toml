@@ -16,7 +16,7 @@ classifiers = [
 dependencies = [
     "accelerate",
     "click",
-    "numpy >= 2.0, < 2.1",
+    "numpy >= 2.0, < 2.2",
     "plotnine",
     "polars",
     "pyyaml",
