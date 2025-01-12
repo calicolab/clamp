@@ -3,6 +3,7 @@ import pickle
 from typing import Literal
 
 import click
+import numpy as np
 import polars as pl
 from sklearn.mixture import BayesianGaussianMixture
 
@@ -99,16 +100,35 @@ def main(
         weight_concentration_prior=weight_concentration_prior,
         weight_concentration_prior_type=weight_concentration_prior_type,
     )
-    cluster_ids = bgmm.fit_predict(embeddings).tolist()
+    cluster_ids = bgmm.fit_predict(embeddings)
+
+    # Compute the cluster averages
+
+    # TODO: there might be a way to get that directly from bgmm? Maybe even the likelihood of each
+    # sample belonging to its cluster?
+    resp = cluster_ids[np.newaxis, :] == np.arange(cluster_ids.max() + 1)[:, np.newaxis]
+    cluster_averages = np.matmul(resp, embeddings) / resp.sum(axis=1, keepdims=True)
+
     click.echo("Training done.")
     if verbose > 0:
         click.echo(f"Log-likelihood: {bgmm.score(embeddings)}")
     if bgmm_file is not None:
         with bgmm_file.open("wb") as out_stream:
             pickle.dump(bgmm, out_stream, protocol=pickle.HIGHEST_PROTOCOL)
-    embeddings_df.select(pl.all().exclude("embedding")).with_columns(
-        pl.Series(values=cluster_ids).alias("cluster_id")
-    ).write_csv(clusters_file, separator="\t")
+
+    # Could also group by cluster, get all the embeddings of the cluster as a single array to which
+    # substract te cluster average and then use np.linalg.vector_norm (since it's batched). Do that
+    # if the speed of the element map becomes a concern.
+    embeddings_df.with_columns(
+        pl.Series(values=cluster_ids.tolist()).alias("cluster_id")
+    ).with_columns(
+        pl.struct(["embedding", "cluster_id"])
+        .map_elements(
+            lambda s: np.linalg.norm(s["embedding"] - cluster_averages[s["cluster_id"]], ord=2),
+            return_dtype=pl.Float64,
+        )
+        .alias("dist_to_cluster_avg")
+    ).select(pl.all().exclude("embedding")).write_csv(clusters_file, separator="\t")
 
 
 if __name__ == "__main__":
