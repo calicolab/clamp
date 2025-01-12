@@ -60,7 +60,7 @@ jobs:
           source .venv/bin/activate
           uv pip install --upgrade transformers
           python -c "from transformers.file_utils import TRANSFORMERS_CACHE; print(f'dir={TRANSFORMERS_CACHE}')" >> $GITHUB_OUTPUT
-          echo "version=$(pip show transformers | grep Version)" >> $GITHUB_OUTPUT
+          echo "version=$(uv pip show transformers | grep Version)" >> $GITHUB_OUTPUT
       - uses: actions/cache@v4
         with:
           path: ${{ steps.transfo-install.outputs.dir }}
