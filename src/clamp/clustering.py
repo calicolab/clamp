@@ -12,9 +12,9 @@ from clamp.embeds import load_embeddings
 
 @click.command(
     help=(
-        "Train a BGMM model using pre-computed embeddings. See"
-        " <https://scikit-learn.org/stable/api/sklearn.mixture.html>"
-        " for explanations of the parameters."
+        "Train a BGMM model using pre-computed embeddings and output the cluster assignations. See"
+        " <https://scikit-learn.org/stable/api/sklearn.mixture.html> for explanations of the"
+        " parameters."
     )
 )
 @click.argument("embeddings_file", type=click.Path(readable=True, dir_okay=False))
@@ -27,6 +27,11 @@ from clamp.embeds import load_embeddings
     type=click.Choice(["full", "tied", "diag", "spherical"]),
     default="full",
     show_default=True,
+)
+@click.option(
+    "--keep-embeddings",
+    help="Keep the contextual embeddings in the output file (generates Parquet instead of tsv)",
+    is_flag=True,
 )
 @click.option(
     "--max-iter", type=click.IntRange(1), default=4000, show_default=True, metavar="INTEGER"
@@ -75,6 +80,7 @@ def main(
     clusters_file: pathlib.Path | None,
     covariance_type: Literal["full", "tied", "diag", "spherical"],
     embeddings_file: pathlib.Path,
+    keep_embeddings: bool,
     max_iter: int,
     n_clusters: int,
     progress: int,
@@ -119,7 +125,7 @@ def main(
     # Could also group by cluster, get all the embeddings of the cluster as a single array to which
     # substract te cluster average and then use np.linalg.vector_norm (since it's batched). Do that
     # if the speed of the element map becomes a concern.
-    embeddings_df.with_columns(
+    res_df = embeddings_df.with_columns(
         pl.Series(values=cluster_ids.tolist()).alias("cluster_id")
     ).with_columns(
         pl.struct(["embedding", "cluster_id"])
@@ -128,7 +134,12 @@ def main(
             return_dtype=pl.Float64,
         )
         .alias("dist_to_cluster_avg")
-    ).select(pl.all().exclude("embedding")).write_csv(clusters_file, separator="\t")
+    )
+
+    if keep_embeddings:
+        res_df.write_parquet(clusters_file)
+    else:
+        res_df.select(pl.all().exclude("embedding")).write_csv(clusters_file, separator="\t")
 
 
 if __name__ == "__main__":
