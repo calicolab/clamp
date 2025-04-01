@@ -1,4 +1,4 @@
-CLuster Any Model Package
+CLuster Any Model Package (clamp)
 =========================
 
 ## Examples
