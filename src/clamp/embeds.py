@@ -102,9 +102,9 @@ def next_token_embed(
     tokenized = tokenizer(
         preamble_w_guess, add_special_tokens=True, return_tensors="pt"
     ).to(model.device)
-    start_ix = tokenized.char_to_token(0, len(preamble) - len(guess))
+    start_idx = tokenized.char_to_token(0, len(preamble_w_guess) - len(guess))
     embeds = model(**tokenized, output_hidden_states=True).hidden_states
-    last_token_embed = embeds[layer][0, start_ix, :]
+    last_token_embed = embeds[layer][0, start_idx, :]
     return last_token_embed
 
 
