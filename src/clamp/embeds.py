@@ -99,10 +99,12 @@ def next_token_embed(
         raise ValueError(f"Empty guess: {guess!r}")
     preamble_w_guess = f"{preamble} {guess}"
     # tokenize new complete sentence
-    tokenized = tokenizer(
-        preamble_w_guess, add_special_tokens=True, return_tensors="pt"
-    ).to(model.device)
+    tokenized = tokenizer(preamble_w_guess, add_special_tokens=True, return_tensors="pt").to(
+        model.device
+    )
     start_idx = tokenized.char_to_token(0, len(preamble_w_guess) - len(guess))
+    if start_idx is None:
+        raise ValueError(f"Tokenization error for preamble {preamble!r} with guess {guess!r}")
     embeds = model(**tokenized, output_hidden_states=True).hidden_states
     last_token_embed = embeds[layer][0, start_idx, :]
     return last_token_embed
