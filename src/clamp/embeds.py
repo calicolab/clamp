@@ -78,11 +78,13 @@ def main(
 
 
 def load_embeddings(embeddings_file: str | pathlib.Path) -> pl.DataFrame:
+    # FIXME: what if the prediction file is missing the extra columns?
     return pl.read_parquet(
         embeddings_file, columns=["preamble", "token_id", "guess", "logit", "embedding"]
     )
 
 
+# FIXME: batch this
 @torch.inference_mode()
 def next_token_embed(
     preamble: str,
@@ -92,11 +94,16 @@ def next_token_embed(
     layer: int,
 ) -> torch.Tensor:
     """Get embeddings for ONE preamble/guess pair"""
+    # This doesn't nearly catch all subtle tokenization gotchas but it's something
+    if len(guess) == 0 or guess.isspace():
+        raise ValueError(f"Empty guess: {guess!r}")
     # FIXME: we shouldn't need to tokenize twice I think
-    start_ix = len(tokenizer(preamble)["input_ids"])
-    preamble_w_guess = preamble + guess
+    start_ix = tokenizer(preamble, add_special_tokens=True).char_to_token(0, len(preamble) - 1) + 1
+    preamble_w_guess = f"{preamble} {guess}"
     # tokenize new complete sentence
-    new_preamble_tokenized = tokenizer(preamble_w_guess, return_tensors="pt").to(model.device)
+    new_preamble_tokenized = tokenizer(
+        preamble_w_guess, add_special_tokens=True, return_tensors="pt"
+    ).to(model.device)
     embeds = model(**new_preamble_tokenized, output_hidden_states=True).hidden_states
     last_token_embed = embeds[layer][0, start_ix, :]
     return last_token_embed
