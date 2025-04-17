@@ -18,7 +18,7 @@ def main(clusters1_path: pathlib.Path, clusters2_path: pathlib.Path):
     clusters_1 = pd.read_csv(clusters1_path, sep="\t")
     clusters_2 = pd.read_csv(clusters2_path, sep="\t")
 
-    (matrix_u,) = get_resp_matrix(clusters_1)
+    matrix_u = get_resp_matrix(clusters_1)
     matrix_v = get_resp_matrix(clusters_2)
     contingency_table = np.inner(matrix_u, matrix_v)
     cai = compute_cmi(contingency_table)
