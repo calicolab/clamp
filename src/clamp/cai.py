@@ -34,7 +34,8 @@ def main(clusters1_path: pathlib.Path, clusters2_path: pathlib.Path):
 def get_resp_matrix(
     clusters: np.ndarray[tuple[int], np.dtype[np.integer]],
 ) -> np.ndarray[tuple[int, int], np.dtype[np.integer]]:
-    n_clusters = clusters.max()
+    """Assumes that cluster ids are positive"""
+    n_clusters = clusters.max() + 1
     return cast(
         np.ndarray[tuple[int, int], np.dtype[np.integer]],
         np.equal(np.arange(n_clusters)[np.newaxis, :], clusters[:, np.newaxis]).astype(np.intp),
