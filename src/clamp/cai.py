@@ -5,6 +5,8 @@ import numpy as np
 import polars as pl
 import click
 
+from clamp.utils import resp_matrix
+
 
 @click.command(
     help=(
@@ -23,23 +25,13 @@ def main(clusters1_path: pathlib.Path, clusters2_path: pathlib.Path):
         by=[pl.col("preamble"), pl.col("guess")]
     )
 
-    matrix_u = get_resp_matrix(clusters_1["guess"].to_numpy())
-    matrix_v = get_resp_matrix(clusters_2["guess"].to_numpy())
+    matrix_u = resp_matrix(clusters_1["guess"].to_numpy())
+    matrix_v = resp_matrix(clusters_2["guess"].to_numpy())
     contingency_table = np.inner(matrix_u, matrix_v)
     cai = compute_cmi(contingency_table)
 
     click.echo(str(cai))
 
-
-def get_resp_matrix(
-    clusters: np.ndarray[tuple[int], np.dtype[np.integer]],
-) -> np.ndarray[tuple[int, int], np.dtype[np.integer]]:
-    """Assumes that cluster ids are positive"""
-    n_clusters = clusters.max() + 1
-    return cast(
-        np.ndarray[tuple[int, int], np.dtype[np.integer]],
-        np.equal(np.arange(n_clusters)[np.newaxis, :], clusters[:, np.newaxis]).astype(np.intp),
-    )
 
 
 def compute_cmi(

@@ -8,6 +8,7 @@ import polars as pl
 from sklearn.mixture import BayesianGaussianMixture
 
 from clamp.embeds import load_embeddings
+from clamp.utils import resp_matrix
 
 
 @click.command(
@@ -106,7 +107,7 @@ def main(
 
     # TODO: there might be a way to get that directly from bgmm? Maybe even the likelihood of each
     # sample belonging to its cluster?
-    resp = cluster_ids[np.newaxis, :] == np.arange(cluster_ids.max() + 1)[:, np.newaxis]
+    resp = resp_matrix(cluster_ids)
     cluster_averages = np.matmul(resp, embeddings) / resp.sum(axis=1, keepdims=True)
 
     if verbose > 0:
