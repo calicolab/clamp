@@ -1,7 +1,8 @@
 import pathlib
+from typing import cast
 
 import numpy as np
-import pandas as pd
+import polars as pl
 import click
 
 
@@ -15,28 +16,29 @@ import click
 @click.argument("clusters1_path", type=click.Path(dir_okay=False))
 @click.argument("clusters2_path", type=click.Path(dir_okay=False))
 def main(clusters1_path: pathlib.Path, clusters2_path: pathlib.Path):
-    clusters_1 = pd.read_csv(clusters1_path, sep="\t").sort_values("guess")
-    clusters_2 = pd.read_csv(clusters2_path, sep="\t").sort_values("guess")
+    clusters_1 = pl.read_csv(clusters1_path, separator="\t").sort(
+        by=[pl.col("preamble"), pl.col("guess")]
+    )
+    clusters_2 = pl.read_csv(clusters2_path, separator="\t").sort(
+        by=[pl.col("preamble"), pl.col("guess")]
+    )
 
-    matrix_u = get_resp_matrix(clusters_1)
-    matrix_v = get_resp_matrix(clusters_2)
+    matrix_u = get_resp_matrix(clusters_1["guess"].to_numpy())
+    matrix_v = get_resp_matrix(clusters_2["guess"].to_numpy())
     contingency_table = np.inner(matrix_u, matrix_v)
     cai = compute_cmi(contingency_table)
 
     click.echo(str(cai))
 
 
-def get_resp_matrix(dataframe) -> np.ndarray[tuple[int, int], np.dtype[np.integer]]:
-    incidence = dataframe.groupby(["guess", "cluster_id"]).size().unstack(fill_value=0)
-
-    max_cluster_id = dataframe["cluster_id"].max()
-
-    # reindex to have all cluster IDs
-    incidence = incidence.reindex(columns=range(max_cluster_id + 1), fill_value=0)
-
-    # convert to numpy arrays
-
-    return incidence.to_numpy()
+def get_resp_matrix(
+    clusters: np.ndarray[tuple[int], np.dtype[np.integer]],
+) -> np.ndarray[tuple[int, int], np.dtype[np.integer]]:
+    n_clusters = clusters.max()
+    return cast(
+        np.ndarray[tuple[int, int], np.dtype[np.integer]],
+        np.equal(np.arange(n_clusters)[np.newaxis, :], clusters[:, np.newaxis]).astype(np.intp),
+    )
 
 
 def compute_cmi(
