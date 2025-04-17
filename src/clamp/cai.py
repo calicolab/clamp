@@ -15,8 +15,8 @@ import click
 @click.argument("clusters1_path", type=click.Path(dir_okay=False))
 @click.argument("clusters2_path", type=click.Path(dir_okay=False))
 def main(clusters1_path: pathlib.Path, clusters2_path: pathlib.Path):
-    clusters_1 = pd.read_csv(clusters1_path, sep="\t")
-    clusters_2 = pd.read_csv(clusters2_path, sep="\t")
+    clusters_1 = pd.read_csv(clusters1_path, sep="\t").sort_values("guess")
+    clusters_2 = pd.read_csv(clusters2_path, sep="\t").sort_values("guess")
 
     matrix_u = get_resp_matrix(clusters_1)
     matrix_v = get_resp_matrix(clusters_2)
@@ -29,10 +29,10 @@ def main(clusters1_path: pathlib.Path, clusters2_path: pathlib.Path):
 def get_resp_matrix(dataframe) -> np.ndarray[tuple[int, int], np.dtype[np.integer]]:
     incidence = dataframe.groupby(["guess", "cluster_id"]).size().unstack(fill_value=0)
 
-    max_cluster_id_df1 = dataframe["cluster_id"].max()
+    max_cluster_id = dataframe["cluster_id"].max()
 
     # reindex to have all cluster IDs
-    incidence = incidence.reindex(columns=range(max_cluster_id_df1 + 1), fill_value=0)
+    incidence = incidence.reindex(columns=range(max_cluster_id + 1), fill_value=0)
 
     # convert to numpy arrays
 
