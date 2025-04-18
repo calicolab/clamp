@@ -1,5 +1,4 @@
 import pathlib
-from typing import cast
 
 import numpy as np
 import polars as pl
@@ -31,7 +30,6 @@ def main(clusters1_path: pathlib.Path, clusters2_path: pathlib.Path):
     cai = compute_cmi(contingency_table)
 
     click.echo(str(cai))
-
 
 
 def compute_cmi(

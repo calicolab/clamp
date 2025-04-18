@@ -115,7 +115,8 @@ def main(
     # TODO: there might be a way to get that directly from bgmm? Maybe even the likelihood of each
     # sample belonging to its cluster?
     resp = resp_matrix(cluster_ids)
-    cluster_averages = np.matmul(resp.T, embeddings.T) / resp.sum(axis=1, keepdims=True)
+    # This gives nan for empty clusters but we don't care since we won't look these up anyway
+    cluster_averages = np.matmul(resp.T, embeddings) / resp.sum(axis=0)[:, np.newaxis]
 
     # Could also group by cluster, get all the embeddings of the cluster as a single array to which
     # substract the cluster average and then use np.linalg.vector_norm (since it's batched). Do that
