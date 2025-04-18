@@ -37,7 +37,7 @@ from clamp.utils import resp_matrix
 )
 @click.option(
     "--progress",
-    help="How many iterations beteween progrss display.",
+    help="How many iterations beteween progress display.",
     type=int,
     default=0,
     show_default=0,
@@ -103,13 +103,6 @@ def main(
     )
     cluster_ids = bgmm.fit_predict(embeddings)
 
-    # Compute the cluster averages
-
-    # TODO: there might be a way to get that directly from bgmm? Maybe even the likelihood of each
-    # sample belonging to its cluster?
-    resp = resp_matrix(cluster_ids)
-    cluster_averages = np.matmul(resp, embeddings) / resp.sum(axis=1, keepdims=True)
-
     click.echo("Training done.")
     if verbose > 0:
         click.echo(f"Log-likelihood: {bgmm.score(embeddings)}")
@@ -117,8 +110,15 @@ def main(
         with bgmm_file.open("wb") as out_stream:
             pickle.dump(bgmm, out_stream, protocol=pickle.HIGHEST_PROTOCOL)
 
+    # Compute the cluster averages
+
+    # TODO: there might be a way to get that directly from bgmm? Maybe even the likelihood of each
+    # sample belonging to its cluster?
+    resp = resp_matrix(cluster_ids)
+    cluster_averages = np.matmul(resp.T, embeddings.T) / resp.sum(axis=1, keepdims=True)
+
     # Could also group by cluster, get all the embeddings of the cluster as a single array to which
-    # substract te cluster average and then use np.linalg.vector_norm (since it's batched). Do that
+    # substract the cluster average and then use np.linalg.vector_norm (since it's batched). Do that
     # if the speed of the element map becomes a concern.
     embeddings_df.with_columns(
         pl.Series(values=cluster_ids.tolist()).alias("cluster_id")
