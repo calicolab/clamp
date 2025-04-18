@@ -37,7 +37,7 @@ from clamp.utils import resp_matrix
 )
 @click.option(
     "--progress",
-    help="How many iterations beteween progrss display.",
+    help="How many iterations beteween progress display.",
     type=int,
     default=0,
     show_default=0,

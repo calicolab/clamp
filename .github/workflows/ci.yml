@@ -75,6 +75,17 @@ jobs:
           clamp predict --device=cpu "EleutherAI/pythia-14m" data/sentences.txt data/generated/pythia_14m-predictions.tsv
           clamp embed --device=cpu "EleutherAI/pythia-14m" data/generated/pythia_14m-predictions.tsv data/generated/pythia_14m_last_layer-embeddings.parquet
           clamp cluster --covariance-type diag --progress 10 data/generated/pythia_14m_last_layer-embeddings.parquet data/generated/pythia_14m_last_layer-clusters.tsv
+      - name: Run tox
+        run: |
+          source .venv/bin/activate
+          uv pip install tox tox-gh-actions tox-uv
+          tox -- -v --durations=0
+      - name: Upload hypothesis examples database
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hypothesis-example-db-py${{ matrix.python-version }}-${{ matrix.os}}
+          path: .hypothesis/examples
   build_wheels:
     name: Build wheels for Python ${{ matrix.python-version }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}

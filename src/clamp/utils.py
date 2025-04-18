@@ -67,7 +67,19 @@ def load_lm_and_tokenizer(
 def resp_matrix(
     cluster_ids: np.ndarray[tuple[int], np.dtype[np.integer]],
 ) -> np.ndarray[tuple[int, int], np.dtype[np.integer]]:
-    """Assumes that cluster ids are positive"""
+    """Compute the responsibility matrix for an array of cluster assignments.
+
+    ## Arguments
+
+    - `cluster_ids`: an array of positive integers coding that element `i` is in the `cluster_id[i]`
+      cluster.
+
+    ## Returns
+
+    - `resp`: a matrix of shape `(n, m)` where `n=cluster_ids.shape[0]` and `m` is the largest
+      cluster id such that `resp[i, j]` is `1` if `j == cluster_ids[i]`, and `0` otherwise. Can also
+      be seen as stack of one-hot encodings.
+    """
     n_clusters = cluster_ids.max() + 1
     return cast(
         np.ndarray[tuple[int, int], np.dtype[np.integer]],
