@@ -24,12 +24,18 @@ def main(clusters1_path: pathlib.Path, clusters2_path: pathlib.Path):
         by=[pl.col("preamble"), pl.col("guess")]
     )
 
-    matrix_u = resp_matrix(clusters_1["guess"].to_numpy())
-    matrix_v = resp_matrix(clusters_2["guess"].to_numpy())
-    contingency_table = np.inner(matrix_u, matrix_v)
-    cai = compute_cmi(contingency_table)
+    resp_u = resp_matrix(clusters_1["guess"].to_numpy())
+    resp_v = resp_matrix(clusters_2["guess"].to_numpy())
 
-    click.echo(str(cai))
+    click.echo(str(cai(resp_u, resp_v)))
+
+
+def cai(
+    resp_u: np.ndarray[tuple[int, int], np.dtype[np.integer]],
+    resp_v: np.ndarray[tuple[int, int], np.dtype[np.integer]],
+) -> np.floating:
+    contingency_table = np.inner(resp_u, resp_v)
+    return compute_cmi(contingency_table)
 
 
 def compute_cmi(
