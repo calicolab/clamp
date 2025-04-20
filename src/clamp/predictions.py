@@ -104,7 +104,7 @@ def get_topk_completions(
         topk = predictions[initial_ids].topk(k=k)
         topk_predictions = initial_ids[topk.indices]
         for token_id, logit in zip(topk_predictions, topk.values, strict=True):
-            token_str = tokenizer.decode(token_id)
+            token_str = tokenizer.decode(token_id).strip()
             data.append(
                 TopKReturn(
                     preamble=preamble,

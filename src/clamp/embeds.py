@@ -78,10 +78,7 @@ def main(
 
 
 def load_embeddings(embeddings_file: str | pathlib.Path) -> pl.DataFrame:
-    # FIXME: what if the prediction file is missing the extra columns?
-    return pl.read_parquet(
-        embeddings_file, columns=["preamble", "token_id", "guess", "logit", "embedding"]
-    )
+    return pl.read_parquet(embeddings_file)
 
 
 # FIXME: batch this
@@ -95,7 +92,8 @@ def next_token_embed(
 ) -> torch.Tensor:
     """Get embeddings for ONE preamble/guess pair"""
     # This doesn't nearly catch all subtle tokenization gotchas but it's something
-    if len(guess) == 0 or guess.isspace():
+    guess = guess.strip()
+    if len(guess) == 0:
         raise ValueError(f"Empty guess: {guess!r}")
     preamble_w_guess = f"{preamble} {guess}"
     # tokenize new complete sentence
