@@ -44,6 +44,14 @@ def load_lm_and_tokenizer(
         tokenizer = transformers.RobertaTokenizerFast.from_pretrained(
             model_name_or_path, clean_up_tokenization_spaces=False, return_tensors="pt"
         )
+    elif isinstance(model, transformers.CamembertForCausalLM):
+        model = transformers.CamembertForMaskedLM.from_pretrained(
+            model_name_or_path, device_map=device
+        )
+        # FIXME: Do we need add_prefix_space here?
+        tokenizer = transformers.CamembertTokenizerFast.from_pretrained(
+            model_name_or_path, clean_up_tokenization_spaces=False, return_tensors="pt"
+        )
     else:
         raise ValueError(f"Model {model_name_or_path} of type {type(model)} is not supported")
 

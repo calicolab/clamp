@@ -85,7 +85,7 @@ def get_topk_completions(
 ) -> list[TopKReturn]:
     if isinstance(model, (transformers.GPTNeoXForCausalLM, transformers.GPT2LMHeadModel)):
         gen_prediction = nwp_predictions
-    elif isinstance(model, transformers.RobertaForMaskedLM):
+    elif isinstance(model, (transformers.RobertaForMaskedLM, transformers.CamembertForMaskedLM)):
         gen_prediction = mlm_predictions
     else:
         raise ValueError(f"Unsupported model type: {model}")
