@@ -23,9 +23,11 @@ def load_lm_and_tokenizer(
     tuple[transformers.GPTNeoXForCausalLM, transformers.GPTNeoXTokenizerFast],
     tuple[transformers.GPT2LMHeadModel, transformers.GPT2TokenizerFast],
     tuple[transformers.RobertaForMaskedLM, transformers.RobertaTokenizerFast],
+    tuple[transformers.CamembertForMaskedLM, transformers.CamembertTokenizerFast],
 ]:
     model = transformers.AutoModelForCausalLM.from_pretrained(model_name_or_path, device_map=device)
     if isinstance(model, transformers.GPTNeoXForCausalLM):
+        # TODO: is prefix space correct here? how was Pythia trained
         tokenizer = transformers.GPTNeoXTokenizerFast.from_pretrained(
             model_name_or_path,
             clean_up_tokenization_spaces=False,
@@ -40,7 +42,6 @@ def load_lm_and_tokenizer(
         model = transformers.RobertaForMaskedLM.from_pretrained(
             model_name_or_path, device_map=device
         )
-        # FIXME: Do we need add_prefix_space here?
         tokenizer = transformers.RobertaTokenizerFast.from_pretrained(
             model_name_or_path, clean_up_tokenization_spaces=False, return_tensors="pt"
         )
@@ -48,7 +49,6 @@ def load_lm_and_tokenizer(
         model = transformers.CamembertForMaskedLM.from_pretrained(
             model_name_or_path, device_map=device
         )
-        # FIXME: Do we need add_prefix_space here?
         tokenizer = transformers.CamembertTokenizerFast.from_pretrained(
             model_name_or_path, clean_up_tokenization_spaces=False, return_tensors="pt"
         )

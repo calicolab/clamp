@@ -85,7 +85,7 @@ def main(
     weight_concentration_prior: float | None,
     weight_concentration_prior_type: Literal["dirichlet_process", "dirichlet_distribution"],
 ):
-    click.echo((f"Fitting {n_clusters} clusters  with embeddings from {embeddings_file}"))
+    click.echo((f"Fitting {n_clusters} clusters with embeddings from {embeddings_file}"))
     embeddings_df = load_embeddings(embeddings_file)
     embeddings = embeddings_df["embedding"].to_numpy()
     bgmm = BayesianGaussianMixture(
@@ -109,15 +109,15 @@ def main(
     resp = cluster_ids[np.newaxis, :] == np.arange(cluster_ids.max() + 1)[:, np.newaxis]
     cluster_averages = np.matmul(resp, embeddings) / resp.sum(axis=1, keepdims=True)
 
-    click.echo("Training done.")
     if verbose > 0:
+        click.echo("Training done.")
         click.echo(f"Log-likelihood: {bgmm.score(embeddings)}")
     if bgmm_file is not None:
         with bgmm_file.open("wb") as out_stream:
             pickle.dump(bgmm, out_stream, protocol=pickle.HIGHEST_PROTOCOL)
 
     # Could also group by cluster, get all the embeddings of the cluster as a single array to which
-    # substract te cluster average and then use np.linalg.vector_norm (since it's batched). Do that
+    # substract the cluster average and then use np.linalg.vector_norm (since it's batched). Do that
     # if the speed of the element map becomes a concern.
     embeddings_df.with_columns(
         pl.Series(values=cluster_ids.tolist()).alias("cluster_id")

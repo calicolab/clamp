@@ -1,4 +1,5 @@
 import pathlib
+from typing import Literal
 
 import click
 import polars as pl
@@ -23,12 +24,20 @@ from clamp.utils import avail_devices, load_device, load_lm_and_tokenizer
 )
 @click.option("--layer", default=-1, type=int, show_default=True)
 @click.option("--model-save-path", type=click.Path(writable=True, file_okay=False))
+@click.option(
+    "--pooling",
+    type=click.Choice(["first", "mean"]),
+    default="mean",
+    show_default=True,
+    help="For multi-token words, wether to use the embedding of the first token or average them.",
+)
 def main(
     embeddings_file: pathlib.Path,
     device: str,
     layer: int,
     model_name_or_path: str,
     model_save_path: str | None,
+    pooling: Literal["first", "mean"],
     predictions_file: pathlib.Path,
 ):
     click.echo(f"Loading model and tokenizer from {model_name_or_path}")
@@ -47,11 +56,12 @@ def main(
         def process(preamble: str, guess: str) -> torch.Tensor:
             progress.update(process_task, advance=1)  # noqa: B023  # The closure is only ever invoked in the loop so this is OK
             return next_token_embed(
-                preamble=preamble,
                 guess=guess,
-                tokenizer=tokenizer,
-                model=model,
                 layer=layer,
+                model=model,
+                mean_pooling=(pooling == "mean"),
+                preamble=preamble,
+                tokenizer=tokenizer,
             )
 
         # FIXME: to_list+list+conversion to array is horribly inefficient but see
@@ -89,12 +99,13 @@ def next_token_embed(
     tokenizer: transformers.PreTrainedTokenizerFast,
     model: transformers.PreTrainedModel,
     layer: int,
+    mean_pooling: bool = True,
 ) -> torch.Tensor:
     """Get embeddings for ONE preamble/guess pair"""
     # This doesn't nearly catch all subtle tokenization gotchas but it's something
     guess = guess.strip()
     if len(guess) == 0:
-        raise ValueError(f"Empty guess: {guess!r}")
+        raise ValueError(f"Empty guess: {guess!r} for preamble {preamble!r}")
     preamble_w_guess = f"{preamble} {guess}"
     # tokenize new complete sentence
     tokenized = tokenizer(preamble_w_guess, add_special_tokens=True, return_tensors="pt").to(
@@ -104,8 +115,12 @@ def next_token_embed(
     if start_idx is None:
         raise ValueError(f"Tokenization error for preamble {preamble!r} with guess {guess!r}")
     embeds = model(**tokenized, output_hidden_states=True).hidden_states
-    last_token_embed = embeds[layer][0, start_idx, :]
-    return last_token_embed
+
+    if mean_pooling:
+        end_idx = tokenized.char_to_token(0, len(preamble_w_guess) - 1)
+        return embeds[layer][0, start_idx : end_idx + 1, :].mean(dim=0)
+    else:
+        return embeds[layer][0, start_idx, :]
 
 
 if __name__ == "__main__":
