@@ -19,7 +19,7 @@ dependencies = [
     "llvmlite >= 0.43, < 0.45",  # Ensure we don't try to install a very old llvmlite with no numpy pins
     "numpy >= 2.0, < 2.3",
     "plotnine >= 0.13, < 0.15",
-    "polars >= 1.8, < 1.27",
+    "polars >= 1.8, < 1.29",
     "pyyaml >= 6, < 7",
     "rich",
     "scikit-learn >= 1.5, < 1.7",
