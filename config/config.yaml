@@ -9,7 +9,7 @@ pipeline:
   embedding:
     layer: 7
   clustering:
-    covariance_type: "diag"
+    covariance_type: "full"
     max_iter: 400
     n_clusters:
       - 100 # default = 100
@@ -18,4 +18,4 @@ pipeline:
       - 50
       - 25
     progress: 2
-    weight_concentration_prior: 0.05
+    weight_concentration_prior: 0.1

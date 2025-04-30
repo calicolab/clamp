@@ -53,6 +53,8 @@ def nwp_predictions(
 ) -> torch.Tensor:
     target_sent = tokenizer(preamble, return_tensors="pt").to(model.device)
     target_out = model(**target_sent, output_hidden_states=True)
+    # FIXME: This assumes that there's no special token at the end, that's not a robust assumption
+    # across models
     predictions = target_out.logits[0, -1, :]  # Get the logits for the last token
     return predictions
 
@@ -66,6 +68,8 @@ def mlm_predictions(
     preamble_mask = f"{preamble} <mask>"
     target_sent = tokenizer(preamble_mask, return_tensors="pt").to(model.device)
     target_out = model(**target_sent)
+    # FIXME: This assumes that there's a special token at the end, that's not a robust assumption
+    # across models
     predictions = target_out.logits[0, -2, :]  # Get the logits for the last token
     return predictions
 
@@ -85,7 +89,7 @@ def get_topk_completions(
 ) -> list[TopKReturn]:
     if isinstance(model, (transformers.GPTNeoXForCausalLM, transformers.GPT2LMHeadModel)):
         gen_prediction = nwp_predictions
-    elif isinstance(model, transformers.RobertaForMaskedLM):
+    elif isinstance(model, (transformers.RobertaForMaskedLM, transformers.CamembertForMaskedLM)):
         gen_prediction = mlm_predictions
     else:
         raise ValueError(f"Unsupported model type: {model}")
@@ -94,7 +98,8 @@ def get_topk_completions(
         [
             token_id
             for token_id in tokenizer.get_vocab().values()
-            if tokenizer.decode(token_id, clean_up_tokenization_spaces=False).startswith(" ")
+            if (d := tokenizer.decode(token_id, clean_up_tokenization_spaces=False)).startswith(" ")
+            and not d.isspace()
         ],
         device=model.device,
     )
@@ -104,7 +109,8 @@ def get_topk_completions(
         topk = predictions[initial_ids].topk(k=k)
         topk_predictions = initial_ids[topk.indices]
         for token_id, logit in zip(topk_predictions, topk.values, strict=True):
-            token_str = tokenizer.decode(token_id)
+            # Could also be `clean_up_tokenization_spaces=True` but do we trust that
+            token_str = tokenizer.decode(token_id).strip()
             data.append(
                 TopKReturn(
                     preamble=preamble,

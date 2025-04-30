@@ -14,6 +14,10 @@ clamp embed "EleutherAI/pythia-14m" data/generated/pythia_14m-predictions.tsv da
 clamp cluster --covariance-type diag --progress 10 data/generated/pythia_14m_last_layer-embeddings.parquet data/generated/pythia_14m_last_layer-clusters.tsv
 ```
 
+**Importan**: the `diagonal` covariance prior for the clustering step is very fast (making this a
+good smoke test), but generally terrible at finding good clusters. In other words: run this once to
+make sure that everything runs, then use full covariance matrices for any serious work.
+
 Pipeline with parameters grid:
 
 ```bash
