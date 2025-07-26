@@ -24,7 +24,7 @@ dependencies = [
     "rich",
     "scikit-learn >= 1.5, < 1.7",
     "torch >= 2.4, < 2.7",
-    "transformers >= 4.44, < 4.51",
+    "transformers >= 4.44, < 4.55",
     "umap-learn[plot] >= 0.5, < 0.6",
 ]
 
