@@ -107,8 +107,8 @@ def main(
 
     # TODO: there might be a way to get that directly from bgmm? Maybe even the likelihood of each
     # sample belonging to its cluster?
-    resp = resp_matrix(cluster_ids)
-    cluster_averages = np.matmul(resp.T, embeddings) / resp.sum(axis=1, keepdims=True)
+    resp = resp_matrix(cluster_ids).T
+    cluster_averages = np.matmul(resp, embeddings) / resp.sum(axis=1, keepdims=True)
 
     if verbose > 0:
         click.echo("Training done.")
