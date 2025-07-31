@@ -4,7 +4,7 @@ CLuster Any Model Package (clamp)
 ## Examples
 
 Run these in a virtual environment, make sure you installed clamp (e.g. with `python -m pip install
--U -r frozen_requirements.lst`).
+-U .`).
 
 Manual pipeline:
 
