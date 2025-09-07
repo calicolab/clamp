@@ -1,8 +1,10 @@
 import pathlib
 
 import numpy as np
-import pandas as pd
+import polars as pl
 import click
+
+from clamp.utils import resp_matrix
 
 
 @click.command(
@@ -12,67 +14,33 @@ import click
         "for mathematical formulas and proofs for or CAI computation."
     )
 )
-@click.argument("clusters_file1", type=click.Path(readable=True, dir_okay=False))
-@click.argument(
-    "clusters_file2", type=click.Path(writable=True, dir_okay=False, path_type=pathlib.Path)
-)
-def main(df1: pathlib.Path | None, df2: pathlib.Path | None):
-    click.echo((f"Computing Cluster Agreement Index between Clusters from {df1} and {df2}"))
-    cluster_1 = pd.read_csv(df1, sep="\t")
-    cluster_2 = pd.read_csv(df2, sep="\t")
-
-    merged_clusters = merge_guesses(cluster_1, cluster_2)
-    matrix_u, matrix_v = convert_to_npmatrix(merged_clusters)
-    contingency_table = compute_contingency_table(matrix_u, matrix_v)
-    cai = compute_cmi(contingency_table)
-
-    click.echo(f"CAI computed: {cai}")
-
-    return cai
-
-
-def merge_guesses(cluster_1, cluster_2):
-    cluster1_df = cluster_1.sort_values("guess")
-    cluster2_df = cluster_2.sort_values("guess")
-
-    guess_merged_df = pd.merge(
-        cluster1_df[["guess", "cluster_id"]],
-        cluster2_df[["guess", "cluster_id"]],
-        on="guess",
-        suffixes=("_df1", "_df2"),
+@click.argument("clusters1_path", type=click.Path(dir_okay=False))
+@click.argument("clusters2_path", type=click.Path(dir_okay=False))
+def main(clusters1_path: pathlib.Path, clusters2_path: pathlib.Path):
+    clusters_1 = pl.read_csv(clusters1_path, separator="\t").sort(
+        by=[pl.col("preamble"), pl.col("guess")]
+    )
+    clusters_2 = pl.read_csv(clusters2_path, separator="\t").sort(
+        by=[pl.col("preamble"), pl.col("guess")]
     )
 
-    click.echo(f"Merged Dataframe\n: {guess_merged_df}")
-    return guess_merged_df
+    resp_u = resp_matrix(clusters_1["guess"].to_numpy())
+    resp_v = resp_matrix(clusters_2["guess"].to_numpy())
+
+    click.echo(str(cai(resp_u, resp_v)))
 
 
-def convert_to_npmatrix(merged_df):
-    df1_incidence = merged_df.groupby(["guess", "cluster_id_df1"]).size().unstack(fill_value=0)
-    df2_incidence = merged_df.groupby(["guess", "cluster_id_df2"]).size().unstack(fill_value=0)
-
-    max_cluster_id_df1 = merged_df["cluster_id_df1"].max()
-    max_cluster_id_df2 = merged_df["cluster_id_df2"].max()
-
-    # reindex to have all cluster IDs
-    df1_incidence = df1_incidence.reindex(columns=range(max_cluster_id_df1 + 1), fill_value=0)
-    df2_incidence = df2_incidence.reindex(columns=range(max_cluster_id_df2 + 1), fill_value=0)
-
-    # convert to numpy arrays
-    matrix_u = df1_incidence.to_numpy()
-    matrix_v = df2_incidence.to_numpy()
-
-    click.echo(f"Matrix U:\n: {matrix_u}")
-    click.echo(f"Matrix V:\n: {matrix_v}")
-
-    return matrix_u, matrix_v
+def cai(
+    resp_u: np.ndarray[tuple[int, int], np.dtype[np.integer]],
+    resp_v: np.ndarray[tuple[int, int], np.dtype[np.integer]],
+) -> np.floating:
+    contingency_table = np.inner(resp_u, resp_v)
+    return compute_cmi(contingency_table)
 
 
-def compute_contingency_table(matrix_u, matrix_v):
-    contingency_table = np.dot(matrix_u.T, matrix_v)
-    return contingency_table
-
-
-def compute_cmi(contingency_table):
+def compute_cmi(
+    contingency_table: np.ndarray[tuple[int, int], np.dtype[np.integer]],
+) -> np.floating:
     # number of points
     n = np.sum(contingency_table)
 

@@ -1,0 +1,9 @@
+git+https://github.com/LoicGrobol/ClusterPlot.git
+ipykernel
+pacmap
+plotnine
+pyarrow
+scipy
+trimap
+tol-colors
+umap-learn

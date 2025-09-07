@@ -8,6 +8,7 @@ import polars as pl
 from sklearn.mixture import BayesianGaussianMixture
 
 from clamp.embeds import load_embeddings
+from clamp.utils import resp_matrix
 
 
 @click.command(
@@ -36,7 +37,7 @@ from clamp.embeds import load_embeddings
 )
 @click.option(
     "--progress",
-    help="How many iterations beteween progrss display.",
+    help="How many iterations beteween progress display.",
     type=int,
     default=0,
     show_default=0,
@@ -106,7 +107,7 @@ def main(
 
     # TODO: there might be a way to get that directly from bgmm? Maybe even the likelihood of each
     # sample belonging to its cluster?
-    resp = cluster_ids[np.newaxis, :] == np.arange(cluster_ids.max() + 1)[:, np.newaxis]
+    resp = resp_matrix(cluster_ids).T
     cluster_averages = np.matmul(resp, embeddings) / resp.sum(axis=1, keepdims=True)
 
     if verbose > 0:
@@ -116,9 +117,8 @@ def main(
         with bgmm_file.open("wb") as out_stream:
             pickle.dump(bgmm, out_stream, protocol=pickle.HIGHEST_PROTOCOL)
 
-    # Could also group by cluster, get all the embeddings of the cluster as a single array to which
-    # substract the cluster average and then use np.linalg.vector_norm (since it's batched). Do that
-    # if the speed of the element map becomes a concern.
+    # Could be done fully in numpy using np.linalg.vector_norm (since it's batched) after
+    # dispatching the cluster averages. Do that if the speed of the element map becomes a concern.
     embeddings_df.with_columns(
         pl.Series(values=cluster_ids.tolist()).alias("cluster_id")
     ).with_columns(
