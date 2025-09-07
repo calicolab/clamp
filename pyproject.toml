@@ -23,7 +23,7 @@ dependencies = [
     "pyyaml >= 6, < 7",
     "rich",
     "scikit-learn >= 1.5, < 1.7",
-    "torch >= 2.4, < 2.7",
+    "torch >= 2.4, < 2.9",
     "transformers >= 4.44, < 4.51",
     "umap-learn[plot] >= 0.5, < 0.6",
 ]
