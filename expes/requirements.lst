@@ -1,7 +1,9 @@
 git+https://github.com/LoicGrobol/ClusterPlot.git
 ipykernel
+opentsne
 pacmap
 plotnine
+git+https://github.com/LoicGrobol/plotnine3d.git
 pyarrow
 scipy
 trimap

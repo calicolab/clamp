@@ -18,11 +18,11 @@ dependencies = [
     "click >= 8, < 9",
     "llvmlite >= 0.43, < 0.45",  # Ensure we don't try to install a very old llvmlite with no numpy pins
     "numpy >= 2.0, < 2.3",
-    "plotnine >= 0.13, < 0.15",
+    "plotnine >= 0.13, < 0.16",
     "polars >= 1.8, < 1.33",
     "pyyaml >= 6, < 7",
     "rich",
-    "scikit-learn >= 1.5, < 1.7",
+    "scikit-learn >= 1.5, < 1.8",
     "torch >= 2.4, < 2.7",
     "transformers >= 4.44, < 4.51",
     "umap-learn[plot] >= 0.5, < 0.6",
