@@ -205,6 +205,33 @@ df = df.with_columns(
 ## Cluster-aware
 
 
+### Supervised UMAP
+
+```python
+umap_super_model = umap.UMAP(random_state=1871, verbose=True)
+X_umap_super = umap_super_model.fit_transform(embeddings, y=clusters)
+
+df = df.with_columns(
+    pl.Series(values=X_umap_super[:, 0]).alias("x_umap_super"),
+    pl.Series(values=X_umap_super[:, 1]).alias("y_umap_super"),
+)
+(
+    p9.ggplot(df, p9.aes(x="x_umap_super", y="y_umap_super", color="cluster_id"))
+    + p9.geom_point()
+    + p9.theme_bw()
+)
+```
+
+```python
+(
+    p9.ggplot(df[sent_row_idx], p9.aes(x="x_umap_super", y="y_umap_super", color="factor(cluster_id)"))
+    + p9.geom_text(p9.aes(label="guess"))
+    + p9.theme_bw()
+    + p9.scale_color_manual(cmap.colors, name="Cluster ID")
+)
+
+```
+
 ### LDA
 
 ```python
@@ -230,9 +257,6 @@ df = df.with_columns(
 )
 
 ```
-
-### QDA
-
 
 ### Cluster trick
 
