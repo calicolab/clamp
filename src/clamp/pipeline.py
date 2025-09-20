@@ -2,7 +2,7 @@ import base64
 import hashlib
 import pathlib
 import json
-from typing import Any
+from typing import Any, NotRequired, TypedDict
 
 import click
 from sklearn.model_selection import ParameterGrid
@@ -19,6 +19,12 @@ def aslist(value: Any) -> list:
     return [value]
 
 
+class PipelineConfig(TypedDict):
+    prediction: NotRequired[dict[str, ParameterGrid]]
+    embedding: NotRequired[dict[str, ParameterGrid]]
+    clustering: NotRequired[ParameterGrid]
+
+
 # TODO: do something with pydantic?
 def load_pipeline(config_path: str | pathlib.Path):
     with open(config_path, "r") as file:  # noqa: PTH123
@@ -26,23 +32,24 @@ def load_pipeline(config_path: str | pathlib.Path):
 
     model_lst = aslist(config["model"])
 
-    predictions_grids = {
-        model: ParameterGrid({k: aslist(v) for k, v in config.get("prediction", {}).items()})
-        for model in model_lst
-    }
+    res = {}
 
-    embeddings_grids = {
-        model: ParameterGrid({k: aslist(v) for k, v in config.get("embedding", {}).items()})
-        for model in model_lst
-    }
+    if "prediction" in config:
+        res["prediction"] = {
+            model: ParameterGrid({k: aslist(v) for k, v in config["prediction"].items()})
+            for model in model_lst
+        }
 
-    clustering_grid = ParameterGrid({k: aslist(v) for k, v in config.get("clustering", {}).items()})
+    if "embedding" in config:
+        res["embedding"] = {
+            model: ParameterGrid({k: aslist(v) for k, v in config["embedding"].items()})
+            for model in model_lst
+        }
 
-    return {
-        "prediction": predictions_grids,
-        "embedding": embeddings_grids,
-        "clustering": clustering_grid,
-    }
+    if "clustering" in config:
+        res["clustering"] = ParameterGrid({k: aslist(v) for k, v in config["clustering"].items()})
+
+    return model_lst, res
 
 
 def str_for_filename(o: Any) -> str:
@@ -91,10 +98,10 @@ def main(
     sentences_file: pathlib.Path,
 ):
     output_dir.mkdir(exist_ok=True, parents=True)
-    grids = load_pipeline(config_file)
+    models, grids = load_pipeline(config_file)
 
     predictions_output_dir = output_dir / "predictions"
-    if len(grids["prediction"]) > 0:
+    if "prediction" in grids:
         prediction_files: dict[str, list[pathlib.Path]] = {}
         predictions_output_dir.mkdir(exist_ok=True)
         for model, pred_grid in grids["prediction"].items():
@@ -122,10 +129,10 @@ def main(
         click.echo(
             f"No prediction config: skipping step and use {predictions_output_dir} as inputs source"
         )
-        prediction_files = list(predictions_output_dir.glob("*"))
+        prediction_files = {m: list(predictions_output_dir.glob("*")) for m in models}
 
     embeddings_output_dir = output_dir / "embeddings"
-    if len(grids["embeddings"]) > 0:
+    if "embeddings" in grids:
         embedding_files: list[pathlib.Path] = []
         embeddings_output_dir.mkdir(exist_ok=True)
         for model, embed_grid in grids["embedding"].items():
@@ -157,7 +164,7 @@ def main(
         )
         embedding_files = list(embeddings_output_dir.glob("*"))
 
-    if len(grids["clustering"]) > 0:
+    if "clustering" in grids:
         clustering_output_dir = output_dir / "clustering"
         clustering_output_dir.mkdir(exist_ok=True)
         for clustering_config in grids["clustering"]:
