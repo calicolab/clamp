@@ -27,16 +27,16 @@ def load_pipeline(config_path: str | pathlib.Path):
     model_lst = aslist(config["model"])
 
     predictions_grids = {
-        model: ParameterGrid({k: aslist(v) for k, v in config["prediction"].items()})
+        model: ParameterGrid({k: aslist(v) for k, v in config.get("prediction", {}).items()})
         for model in model_lst
     }
 
     embeddings_grids = {
-        model: ParameterGrid({k: aslist(v) for k, v in config["embedding"].items()})
+        model: ParameterGrid({k: aslist(v) for k, v in config.get("embedding", {}).items()})
         for model in model_lst
     }
 
-    clustering_grid = ParameterGrid({k: aslist(v) for k, v in config["clustering"].items()})
+    clustering_grid = ParameterGrid({k: aslist(v) for k, v in config.get("clustering", {}).items()})
 
     return {
         "prediction": predictions_grids,
@@ -93,78 +93,93 @@ def main(
     output_dir.mkdir(exist_ok=True, parents=True)
     grids = load_pipeline(config_file)
 
-    prediction_files: dict[str, list[pathlib.Path]] = {}
     predictions_output_dir = output_dir / "predictions"
-    predictions_output_dir.mkdir(exist_ok=True)
-    for model, pred_grid in grids["prediction"].items():
-        prediction_files[model] = []
-        for predict_config in pred_grid:
-            click.echo(f"Predictions for {model} with config {predict_config}")
-            config_str = params_str(predict_config)
-            pred_stem = file_name_or_meta(
-                f"{str_for_filename(model)}|{config_str}", directory=predictions_output_dir
-            )
-            prediction_output_file = predictions_output_dir / f"{pred_stem}.tsv"
-
-            prediction_files[model].append(prediction_output_file)
-            if prediction_output_file.exists() and not overwrite:
-                continue
-
-            ctx.invoke(
-                clamp.predictions.main,
-                model_name_or_path=model,
-                sentences_file=sentences_file,
-                predictions_file=prediction_output_file,
-                **predict_config,
-            )
-
-    embedding_files: list[pathlib.Path] = []
-    embeddings_output_dir = output_dir / "embeddings"
-    embeddings_output_dir.mkdir(exist_ok=True)
-    for model, embed_grid in grids["embedding"].items():
-        for pred_file in prediction_files[model]:
-            for embedding_config in embed_grid:
-                click.echo(
-                    f"Embeddings for {model} with config {embedding_config} on {pred_file.name}"
+    if len(grids["prediction"]) > 0:
+        prediction_files: dict[str, list[pathlib.Path]] = {}
+        predictions_output_dir.mkdir(exist_ok=True)
+        for model, pred_grid in grids["prediction"].items():
+            prediction_files[model] = []
+            for predict_config in pred_grid:
+                click.echo(f"Predictions for {model} with config {predict_config}")
+                config_str = params_str(predict_config)
+                pred_stem = file_name_or_meta(
+                    f"{str_for_filename(model)}|{config_str}", directory=predictions_output_dir
                 )
-                config_str = params_str(embedding_config)
-                embed_stem = file_name_or_meta(
-                    f"{pred_file.stem}+{config_str}", directory=embeddings_output_dir
-                )
-                embeddings_output_file = embeddings_output_dir / f"{embed_stem}.parquet"
+                prediction_output_file = predictions_output_dir / f"{pred_stem}.tsv"
 
-                embedding_files.append(embeddings_output_file)
-                if embeddings_output_file.exists() and not overwrite:
+                prediction_files[model].append(prediction_output_file)
+                if prediction_output_file.exists() and not overwrite:
                     continue
 
                 ctx.invoke(
-                    clamp.embeds.main,
+                    clamp.predictions.main,
                     model_name_or_path=model,
-                    predictions_file=pred_file,
-                    embeddings_file=embeddings_output_file,
-                    **embedding_config,
+                    sentences_file=sentences_file,
+                    predictions_file=prediction_output_file,
+                    **predict_config,
                 )
+    else:
+        click.echo(
+            f"No prediction config: skipping step and use {predictions_output_dir} as inputs source"
+        )
+        prediction_files = list(predictions_output_dir.glob("*"))
 
-    clustering_output_dir = output_dir / "clustering"
-    clustering_output_dir.mkdir(exist_ok=True)
-    for clustering_config in grids["clustering"]:
-        for embed_file in embedding_files:
-            click.echo(f"Clustering with config {clustering_config} on {embed_file.name}")
-            config_str = params_str(clustering_config)
-            cluster_stem = file_name_or_meta(
-                f"{embed_file.stem}+{config_str}", directory=clustering_output_dir
-            )
-            if clustering_config.get("keep_embeddings", False):
-                clustering_output_file = clustering_output_dir / f"{cluster_stem}.parquet"
-            else:
-                clustering_output_file = clustering_output_dir / f"{cluster_stem}.tsv"
-            click.echo(f"Saving to {clustering_output_file}")
-            ctx.invoke(
-                clamp.clustering.main,
-                embeddings_file=embed_file,
-                clusters_file=clustering_output_file,
-                **clustering_config,
-            )
+    embeddings_output_dir = output_dir / "embeddings"
+    if len(grids["embeddings"]) > 0:
+        embedding_files: list[pathlib.Path] = []
+        embeddings_output_dir.mkdir(exist_ok=True)
+        for model, embed_grid in grids["embedding"].items():
+            for pred_file in prediction_files[model]:
+                for embedding_config in embed_grid:
+                    click.echo(
+                        f"Embeddings for {model} with config {embedding_config} on {pred_file.name}"
+                    )
+                    config_str = params_str(embedding_config)
+                    embed_stem = file_name_or_meta(
+                        f"{pred_file.stem}+{config_str}", directory=embeddings_output_dir
+                    )
+                    embeddings_output_file = embeddings_output_dir / f"{embed_stem}.parquet"
+
+                    embedding_files.append(embeddings_output_file)
+                    if embeddings_output_file.exists() and not overwrite:
+                        continue
+
+                    ctx.invoke(
+                        clamp.embeds.main,
+                        model_name_or_path=model,
+                        predictions_file=pred_file,
+                        embeddings_file=embeddings_output_file,
+                        **embedding_config,
+                    )
+    else:
+        click.echo(
+            f"No embedding config: skipping step and use {embeddings_output_dir} as inputs source"
+        )
+        embedding_files = list(embeddings_output_dir.glob("*"))
+
+    if len(grids["clustering"]) > 0:
+        clustering_output_dir = output_dir / "clustering"
+        clustering_output_dir.mkdir(exist_ok=True)
+        for clustering_config in grids["clustering"]:
+            for embed_file in embedding_files:
+                click.echo(f"Clustering with config {clustering_config} on {embed_file.name}")
+                config_str = params_str(clustering_config)
+                cluster_stem = file_name_or_meta(
+                    f"{embed_file.stem}+{config_str}", directory=clustering_output_dir
+                )
+                if clustering_config.get("keep_embeddings", False):
+                    clustering_output_file = clustering_output_dir / f"{cluster_stem}.parquet"
+                else:
+                    clustering_output_file = clustering_output_dir / f"{cluster_stem}.tsv"
+                click.echo(f"Saving to {clustering_output_file}")
+                ctx.invoke(
+                    clamp.clustering.main,
+                    embeddings_file=embed_file,
+                    clusters_file=clustering_output_file,
+                    **clustering_config,
+                )
+    else:
+        click.echo("No clustering config: skipping step.")
 
 
 if __name__ == "__main__":
