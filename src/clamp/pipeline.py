@@ -132,7 +132,7 @@ def main(
         prediction_files = {m: list(predictions_output_dir.glob("*")) for m in models}
 
     embeddings_output_dir = output_dir / "embeddings"
-    if "embeddings" in grids:
+    if "embedding" in grids:
         embedding_files: list[pathlib.Path] = []
         embeddings_output_dir.mkdir(exist_ok=True)
         for model, embed_grid in grids["embedding"].items():
