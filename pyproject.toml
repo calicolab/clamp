@@ -15,7 +15,7 @@ classifiers = [
 ]
 dependencies = [
     "accelerate >= 1.2, < 1.7",
-    "click >= 8, < 9",
+    "click >= 8, < 8.3",
     "llvmlite >= 0.43",  # Ensure we don't try to install a very old llvmlite with no numpy pins
     "numpy >= 2.0, < 2.4",
     "polars >= 1.8, < 1.33",
