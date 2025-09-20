@@ -104,7 +104,7 @@ def main(
             pred_stem = file_name_or_meta(
                 f"{str_for_filename(model)}|{config_str}", directory=predictions_output_dir
             )
-            prediction_output_file = predictions_output_dir / f"{ pred_stem}.tsv"
+            prediction_output_file = predictions_output_dir / f"{pred_stem}.tsv"
 
             prediction_files[model].append(prediction_output_file)
             if prediction_output_file.exists() and not overwrite:
@@ -154,7 +154,10 @@ def main(
             cluster_stem = file_name_or_meta(
                 f"{embed_file.stem}+{config_str}", directory=clustering_output_dir
             )
-            clustering_output_file = clustering_output_dir / f"{cluster_stem}.tsv"
+            if clustering_config.get("keep_embeddings", False):
+                clustering_output_file = clustering_output_dir / f"{cluster_stem}.parquet"
+            else:
+                clustering_output_file = clustering_output_dir / f"{cluster_stem}.tsv"
             click.echo(f"Saving to {clustering_output_file}")
             ctx.invoke(
                 clamp.clustering.main,
