@@ -30,6 +30,11 @@ from clamp.utils import resp_matrix
     show_default=True,
 )
 @click.option(
+    "--keep-embeddings",
+    is_flag=True,
+    help="Keep the embeddings column in the output file, which in that case will be Parquet.",
+)
+@click.option(
     "--max-iter", type=click.IntRange(1), default=4000, show_default=True, metavar="INTEGER"
 )
 @click.option(
@@ -72,9 +77,10 @@ from clamp.utils import resp_matrix
     show_default=True,
 )
 def main(
-    bgmm_file: pathlib.Path | None,
-    clusters_file: pathlib.Path | None,
+    bgmm_file: pathlib.Path,
+    clusters_file: pathlib.Path,
     covariance_type: Literal["full", "tied", "diag", "spherical"],
+    keep_embeddings: bool,
     embeddings_file: pathlib.Path,
     max_iter: int,
     n_clusters: int,
@@ -119,7 +125,7 @@ def main(
 
     # Could be done fully in numpy using np.linalg.vector_norm (since it's batched) after
     # dispatching the cluster averages. Do that if the speed of the element map becomes a concern.
-    embeddings_df.with_columns(
+    embeddings_df = embeddings_df.with_columns(
         pl.Series(values=cluster_ids.tolist()).alias("cluster_id")
     ).with_columns(
         pl.struct(["embedding", "cluster_id"])
@@ -128,7 +134,20 @@ def main(
             return_dtype=pl.Float64,
         )
         .alias("dist_to_cluster_avg")
-    ).select(pl.all().exclude("embedding")).write_csv(clusters_file, separator="\t")
+    )
+
+    if keep_embeddings:
+        embeddings_df.with_columns(
+            pl.col("cluster_id")
+            .replace_strict(
+                np.arange(cluster_averages.shape[0]),
+                cluster_averages,
+                return_dtype=pl.Array(pl.Float64, shape=cluster_averages.shape[1]),
+            )
+            .alias("cluster_avg")
+        ).write_parquet(clusters_file)
+    else:
+        embeddings_df.select(pl.all().exclude("embedding")).write_csv(clusters_file, separator="\t")
 
 
 if __name__ == "__main__":
