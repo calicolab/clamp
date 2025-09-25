@@ -145,6 +145,10 @@ def main(
                     embed_stem = file_name_or_meta(
                         f"{pred_file.stem}+{config_str}", directory=embeddings_output_dir
                     )
+                    # In case we had no prediction step or it was done with a different model
+                    # somehow
+                    if (m := str_for_filename(model)) not in embed_stem:
+                        embed_stem = f"{m}|{embed_stem}"
                     embeddings_output_file = embeddings_output_dir / f"{embed_stem}.parquet"
 
                     embedding_files.append(embeddings_output_file)
