@@ -82,7 +82,7 @@ jobs:
           clamp cluster --covariance-type diag --progress 10 data/generated/pythia_14m_last_layer-embeddings.parquet data/generated/pythia_14m_last_layer-clusters.tsv
       - name: Run tox
         run: |
-          uv tool install tox --with tox-gh-actions --with tox-uv
+          uv tool install --python ${{ matrix.python-version }} tox --with tox-gh-actions --with tox-uv
           tox -- -v --durations=0
       - name: Upload hypothesis examples database
         uses: actions/upload-artifact@v4
