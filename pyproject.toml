@@ -25,7 +25,7 @@ dependencies = [
 	"scipy >= 1.17",  # Ensure we don't try to install an old scipy
     "scikit-learn >= 1.5, < 2",
     "torch >= 2.4, < 2.10",
-    "transformers >= 4.44, < 4.51",
+    "transformers >= 4.44, < 5",
     "umap-learn[plot] >= 0.5, < 0.6",
 ]
 
