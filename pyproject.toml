@@ -22,6 +22,7 @@ dependencies = [
     "polars >= 1.8, < 1.35",
     "pyyaml >= 6, < 7",
     "rich",
+	"scipy >= 1.17",  # Ensure we don't try to install an old scipy
     "scikit-learn >= 1.5, < 1.8",
     "torch >= 2.4, < 2.10",
     "transformers >= 4.44, < 4.51",
