@@ -18,7 +18,7 @@ dependencies = [
     "click >= 8, < 9",
     "llvmlite >= 0.43",  # Ensure we don't try to install a very old llvmlite with no numpy pins
     "numpy >= 2, < 3",
-    "plotnine >= 0.13, < 0.15",
+    "plotnine >= 0.13, < 0.16",
     "polars >= 1.8, < 2",
     "pyyaml >= 6, < 7",
     "rich",
